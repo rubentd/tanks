@@ -1,22 +1,22 @@
+body{
+	background-color: #333;
+}
 
+.arena{
+	margin: 10px auto;
+	background-color: white;
+	position: relative;
+}
 
-/* ==========================================================================
-   Author's custom styles
-   ========================================================================== */
+.tank{
+	position: absolute;
+	border: 1px solid #ccc;
+}
 
+.tank-base{
+	position: absolute;
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+.tank-top{
+	position: absolute;
+}
