@@ -10,13 +10,37 @@ body{
 
 .tank{
 	position: absolute;
-	border: 1px solid #ccc;
+	background-repeat: no-repeat;
+	background-position: -10px 0;
 }
 
-.tank-base{
+.tank-cannon{
 	position: absolute;
+	top: -25px;
+	width: 60px;
+	height: 80px;
+	background-image: url(../img/tank-cannon.png);
+	background-position: -10px 0;
+	-webkit-transform-origin: 30px 65px;
 }
 
-.tank-top{
+.cannon-ball{
 	position: absolute;
+	width: 10px;
+	height: 10px;
+	-webkit-border-radius: 5px;
+	background-color: #5e5e5e;
+}
+
+/* skins */
+.tank1{
+	background-image: url(../img/tank-1-base.png);
+}
+
+.tank2{
+	background-image: url(../img/tank-2-base.png);
+}
+
+.tank3{
+	background-image: url(../img/tank-3-base.png);
 }
