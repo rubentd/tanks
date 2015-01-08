@@ -4,9 +4,10 @@ var ROTATION_SPEED = 5;
 var BALL_SPEED = 10;
 var ARENA_MARGIN = 30;
 
-function Game(arenaId, w, h){
-	this.tanks = [];
-	this.balls = [];
+function Game(arenaId, w, h, socket){
+	this.tanks = []; //Tanks (other than the local tank)
+	this.balls = []; //Balls (others than the local balls)
+	this.localBalls = [];
 	this.lastBallId = 0;
 	this.width = w;
 	this.height = h;
@@ -14,6 +15,7 @@ function Game(arenaId, w, h){
 	this.$arena.css('width', w);
 	this.$arena.css('height', h);
 	this.hp = 100;
+	this.socket = socket;
 
 	var g = this;
 	setInterval(function(){
@@ -23,22 +25,41 @@ function Game(arenaId, w, h){
 
 Game.prototype = {
 
-	addTank: function(id, type){
-		var t = new Tank(id, type, this.$arena, this);
-		this.tanks.push(t);
-		debug('tank ' + id + ' added');
+	addTank: function(id, type, isLocal){
+		var t = new Tank(id, type, this.$arena, this, isLocal);
+		if(isLocal){
+			this.localTank = t;
+		}else{
+			this.tanks.push(t);
+		}
 	},
 
 	addBall: function(id, owner){
 		var b = new Ball(id, owner, this.$arena);
 		this.balls.push(b);
+		if(owner.id == this.localTank.id){ //I need to know if that ball was shot by the local tank
+			this.localBalls.push(b);
+		}
 	},
 
 	mainLoop: function(){
-		this.tanks.forEach( function(tank){
-			tank.move();
-		});
+		this.sync();
 
+		//move local tank
+		if(this.localTank != undefined){
+			this.localTank.move();
+		}
+		//Move local balls
+		this.localBalls.forEach( function(ball){
+			ball.fly();
+		});
+		this.localBalls = this.localBalls.filter( function(b){return !b.isOutOfBounds} );
+
+		//move external elements ----------
+		this.tanks.forEach( function(tank){
+			tank.fly();
+		});
+		//Move local balls
 		this.balls.forEach( function(ball){
 			ball.fly();
 		});
@@ -51,6 +72,11 @@ Game.prototype = {
 		if(this.lastBallId > 1000){
 			this.lastBallId = 0;
 		}
+	},
+
+	//Sync data with server
+	sync: function(serverGame){
+		
 	}
 
 }
@@ -107,7 +133,7 @@ Ball.prototype = {
 
 }
 
-function Tank(id, type, $arena, game){
+function Tank(id, type, $arena, game, isLocal){
 	this.id = id;
 	this.type = type;
 	this.speed = 5;
@@ -122,6 +148,7 @@ function Tank(id, type, $arena, game){
 	this.y = getRandomInt(0 + this.h, $arena.height() - this.h);
 	this.dir = [0, 0, 0, 0];
 	this.game = game;
+	this.isLocal = isLocal;
 
 	this.materialize();
 }
@@ -143,7 +170,10 @@ Tank.prototype = {
 		this.$info.append('<div class="hp-bar"></div>');
 
 		this.refresh();
-		this.setControls();
+
+		if(this.isLocal){
+			this.setControls();
+		}
 	},
 
 	isMoving: function(){
