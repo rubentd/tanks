@@ -2,6 +2,7 @@ var DEBUG = true;
 var INTERVAL = 50;
 var ROTATION_SPEED = 5;
 var BALL_SPEED = 10;
+var ARENA_MARGIN = 30;
 
 function Game(arenaId, w, h){
 	this.tanks = [];
@@ -12,6 +13,7 @@ function Game(arenaId, w, h){
 	this.$arena = $(arenaId);
 	this.$arena.css('width', w);
 	this.$arena.css('height', h);
+	this.hp = 100;
 
 	var g = this;
 	setInterval(function(){
@@ -134,17 +136,39 @@ Tank.prototype = {
 		this.$body.css('-webkit-transform', 'rotateZ(' + this.baseAngle + 'deg)');
 		this.$body.append('<div id="cannon-' + this.id + '" class="tank-cannon"></div>');
 		this.$cannon = $('#cannon-' + this.id);
+		
+		this.$arena.append('<div id="info-' + this.id + '" class="info"></div>');
+		this.$info = $('#info-' + this.id);
+		this.$info.append('<div class="label">' + this.id + '</div>');
+		this.$info.append('<div class="hp-bar"></div>');
 
 		this.refresh();
 		this.setControls();
 	},
 
+	isMoving: function(){
+		if(this.dir[0] != 0 || this.dir[1] != 0){
+			return true;
+		}
+		return false;
+	},
+
 	refresh: function(){
-		this.$body.css('left', this.x - 30);
-		this.$body.css('top', this.y - 40);
+		this.$body.css('left', this.x - 30 + 'px');
+		this.$body.css('top', this.y - 40 + 'px');
 		this.$body.css('-webkit-transform', 'rotateZ(' + this.baseAngle + 'deg)');
 		var cannonAbsAngle = this.cannonAngle - this.baseAngle;
 		this.$cannon.css('-webkit-transform', 'rotateZ(' + cannonAbsAngle + 'deg)');
+
+		this.$info.css('left', (this.x) + 'px');
+		this.$info.css('top', (this.y) + 'px');
+		if(this.isMoving()){
+			this.$info.addClass('fade');
+		}else{
+			this.$info.removeClass('fade');
+		}
+
+		this.$info.find('.hp-bar').css('width', this.hp + 'px');
 	},
 
 	setControls: function(){
@@ -196,8 +220,14 @@ Tank.prototype = {
 	},
 
 	move: function(){
-		this.x += this.speed * this.dir[0];
-		this.y += this.speed * this.dir[1];
+		var moveX = this.speed * this.dir[0];
+		var moveY = this.speed * this.dir[1]
+		if(this.x + moveX > (0 + ARENA_MARGIN) && (this.x + moveX) < (this.$arena.width() - ARENA_MARGIN)){
+			this.x += moveX;
+		}
+		if(this.y + moveY > (0 + ARENA_MARGIN) && (this.y + moveY) < (this.$arena.height() - ARENA_MARGIN)){
+			this.y += moveY;
+		}
 		this.rotateBase();
 		this.refresh();
 	},

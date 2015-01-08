@@ -1,11 +1,25 @@
 body{
-	background-color: #333;
+	background-color: #ddd;
+	font-family: Helvetica Neue, Arial;
+	overflow: hidden;
+}
+
+.name-prompt{
+	position: absolute;
+	top: 100px;
+	left: 50%;
+	margin-left: -200px;
+	width: 400px;
+	background-color: #eee;
+	z-index: 2;
+	padding: 10px;
 }
 
 .arena{
 	margin: 10px auto;
 	background-color: white;
 	position: relative;
+	pointer-events: none;
 }
 
 .tank{
@@ -30,6 +44,37 @@ body{
 	height: 10px;
 	-webkit-border-radius: 5px;
 	background-color: #5e5e5e;
+}
+
+.info{
+	width: 100px;
+	height: 40px;
+	position: absolute;
+	top: 0;
+	left: 0;
+	margin-top: -85px;
+	margin-left: -50px;
+	opacity: .8;
+}
+
+.label{
+	font-size: 12px;
+	text-align: center;
+	width: 100px;
+	color: #5e5e5e;
+	margin: 0 auto;
+	display: inline-block;
+}
+
+.hp-bar{
+	width: 100px;
+	height: 8px;
+	background-color: #7DD12C;
+	margin: 0 auto;
+}
+
+.fade{
+	opacity: .3;
 }
 
 /* skins */
