@@ -25,13 +25,21 @@ function Game(arenaId, w, h, socket){
 
 Game.prototype = {
 
-	addTank: function(id, type, isLocal){
-		var t = new Tank(id, type, this.$arena, this, isLocal);
+	addTank: function(id, type, isLocal, x, y){
+		var t = new Tank(id, type, this.$arena, this, isLocal, x, y);
 		if(isLocal){
 			this.localTank = t;
 		}else{
 			this.tanks.push(t);
 		}
+	},
+
+	removeTank: function(tankId){
+		//Remove tank object
+		this.tanks = this.tanks.filter( function(t){return t.id != tankId} );
+		//remove tank from dom
+		$('#' + tankId).remove();
+		$('#info-' + tankId).remove();
 	},
 
 	addBall: function(id, owner){
@@ -43,28 +51,25 @@ Game.prototype = {
 	},
 
 	mainLoop: function(){
-		this.sync();
-
+		if(this.localTank != undefined){
+			this.sendData(); //send data to server about local tank and bullets
+		}
+		
 		//move local tank
 		if(this.localTank != undefined){
 			this.localTank.move();
+			//Move local balls
+			this.localBalls.forEach( function(ball){
+				ball.fly();
+			});
+			this.localBalls = this.localBalls.filter( function(b){return !b.isOutOfBounds} );
 		}
-		//Move local balls
-		this.localBalls.forEach( function(ball){
-			ball.fly();
-		});
-		this.localBalls = this.localBalls.filter( function(b){return !b.isOutOfBounds} );
 
-		//move external elements ----------
-		this.tanks.forEach( function(tank){
-			tank.fly();
-		});
-		//Move local balls
+		//refresh balls
 		this.balls.forEach( function(ball){
-			ball.fly();
+			ball.refresh();
 		});
-		this.balls = this.balls.filter( function(b){return !b.isOutOfBounds} );
-
+		
 	},
 
 	increaseLastBallId: function(){
@@ -74,9 +79,53 @@ Game.prototype = {
 		}
 	},
 
-	//Sync data with server
-	sync: function(serverGame){
-		
+	sendData: function(){
+		//Send local info to server
+		var gameData = {};
+		var t = { 
+			id: this.localTank.id,
+			x: this.localTank.x,
+			y: this.localTank.y,
+			baseAngle: this.localTank.baseAngle,
+			cannonAngle: this.localTank.cannonAngle  
+		};
+		gameData.tank = t;
+		//Send balls data
+		gameData.balls = [];
+		this.balls.forEach( function(ball){
+			gameData.balls.push({x: ball.x, y: ball.y, ownerId: ball.owner.id});
+		});
+		this.socket.emit('sync', gameData);
+	},
+
+	receiveData: function(serverData){
+		var game = this;
+
+		serverData.tanks.forEach( function(serverTank){
+			var found = false;
+			game.tanks.forEach( function(clientTank){
+				//Find a match and update it
+				if(clientTank.id == serverTank.id){
+					clientTank.x = serverTank.x;
+					clientTank.y = serverTank.y;
+					clientTank.baseAngle = serverTank.baseAngle;
+					clientTank.cannonAngle = serverTank.cannonAngle;
+					clientTank.refresh();
+					found = true;
+				}
+			});
+			if(!found && 
+				(game.localTank == undefined || serverTank.id != game.localTank.id)){ 
+				//I need to create it
+				game.addTank(serverTank.id, serverTank.type, false, serverTank.x, serverTank.y);
+			}
+		});
+
+		//sync balls (have to solve id problem concat tank id)
+		serverData.balls.forEach( function(ball){
+
+		});
+
 	}
 
 }
@@ -133,7 +182,7 @@ Ball.prototype = {
 
 }
 
-function Tank(id, type, $arena, game, isLocal){
+function Tank(id, type, $arena, game, isLocal, x, y){
 	this.id = id;
 	this.type = type;
 	this.speed = 5;
@@ -144,8 +193,8 @@ function Tank(id, type, $arena, game, isLocal){
 	//Make multiple of rotation amount
 	this.baseAngle -= (this.baseAngle % ROTATION_SPEED);
 	this.cannonAngle = 0;
-	this.x = getRandomInt(0 + this.w, $arena.width() - this.w);
-	this.y = getRandomInt(0 + this.h, $arena.height() - this.h);
+	this.x = x;
+	this.y = y;
 	this.dir = [0, 0, 0, 0];
 	this.game = game;
 	this.isLocal = isLocal;

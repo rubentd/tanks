@@ -77,6 +77,37 @@ body{
 	opacity: .3;
 }
 
+.tank-selection{
+	display: inline-block;
+	width: 350px;
+	padding: 0;
+	list-style-type: none;
+	margin: 20px auto 0 auto;
+}
+
+.tank-select label{
+	display: inline-block;
+	margin: 10px 0;
+	width: 100%;
+	text-align: center;
+}
+
+.tank-selection li{
+	display: inline-block;
+	float: left;
+	width: 33%;
+	text-align: center;
+	cursor: pointer;
+	border: 2px solid #eee;
+	padding: 10px 0;
+}
+
+.tank-selection li.selected{
+	border: 2px solid #158cba;
+	-webkit-border-radius: 5px;
+	border-radius: 5px;
+}
+
 /* skins */
 .tank1{
 	background-image: url(../img/tank-1-base.png);
