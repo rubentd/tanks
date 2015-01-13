@@ -1,5 +1,6 @@
 var express = require('express');
 var app = express();
+var counter = 0;
 
 //Static resources server
 app.use(express.static(__dirname + '/www'));
@@ -78,6 +79,7 @@ io.on('connection', function(client) {
 		}
 		//Broadcast data to clients
 		client.broadcast.emit('sync', game.getData());
+		counter ++;
 	});
 
 	client.on('leaveGame', function(tankId){

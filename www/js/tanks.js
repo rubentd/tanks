@@ -6,7 +6,6 @@ var ARENA_MARGIN = 30;
 
 function Game(arenaId, w, h, socket){
 	this.tanks = []; //Tanks (other than the local tank)
-	this.balls = []; //Balls (others than the local balls)
 	this.localBalls = [];
 	this.lastBallId = 0;
 	this.width = w;
@@ -42,12 +41,8 @@ Game.prototype = {
 		$('#info-' + tankId).remove();
 	},
 
-	addBall: function(id, owner){
-		var b = new Ball(id, owner, this.$arena);
-		this.balls.push(b);
-		if(owner.id == this.localTank.id){ //I need to know if that ball was shot by the local tank
-			this.localBalls.push(b);
-		}
+	addLocalBall: function(ball){
+		this.localBalls.push(ball);
 	},
 
 	mainLoop: function(){
@@ -64,11 +59,6 @@ Game.prototype = {
 			});
 			this.localBalls = this.localBalls.filter( function(b){return !b.isOutOfBounds} );
 		}
-
-		//refresh balls
-		this.balls.forEach( function(ball){
-			ball.refresh();
-		});
 		
 	},
 
@@ -80,8 +70,10 @@ Game.prototype = {
 	},
 
 	sendData: function(){
-		//Send local info to server
+		//Send local data to server
 		var gameData = {};
+		
+		//Send tank data
 		var t = { 
 			id: this.localTank.id,
 			x: this.localTank.x,
@@ -90,17 +82,18 @@ Game.prototype = {
 			cannonAngle: this.localTank.cannonAngle  
 		};
 		gameData.tank = t;
-		//Send balls data
+		
+		//Send local balls data
 		gameData.balls = [];
-		this.balls.forEach( function(ball){
-			gameData.balls.push({x: ball.x, y: ball.y, ownerId: ball.owner.id});
+		this.localBalls.forEach( function(ball){
+			gameData.balls.push({id: ball.id, x: ball.x, y: ball.y, ownerId: ball.owner.id});
 		});
 		this.socket.emit('sync', gameData);
 	},
 
 	receiveData: function(serverData){
 		var game = this;
-
+		
 		serverData.tanks.forEach( function(serverTank){
 			var found = false;
 			game.tanks.forEach( function(clientTank){
@@ -121,27 +114,34 @@ Game.prototype = {
 			}
 		});
 
+		game.$arena.find('.foreign-ball').remove();
 		//sync balls (have to solve id problem concat tank id)
-		serverData.balls.forEach( function(ball){
-
+		serverData.balls.forEach( function(serverBall){
+			//Delete balls from dom
+			var b = new Ball(serverBall.id, undefined, game.$arena, false, serverBall.x, serverBall.y); 
 		});
-
 	}
-
 }
 
-function Ball(id, owner, $arena){
+function Ball(id, owner, $arena, isLocal, initX, initY){
 	this.id = id;
 	this.owner = owner;
 	this.$arena = $arena;
-	this.alpha = this.owner.cannonAngle * Math.PI / 180; //angle of shot in radians
-
-	//Set init position
-	var cannonLength = 60;
-	var deltaX = cannonLength * Math.sin(this.alpha);
-	var deltaY = cannonLength * Math.cos(this.alpha);
-	this.x = owner.x + deltaX - 5;
-	this.y = owner.y - deltaY - 5;
+	this.isLocal = isLocal;
+	
+	//Just for local balls who have owner
+	if(owner != undefined){
+		this.alpha = this.owner.cannonAngle * Math.PI / 180; //angle of shot in radians	
+		//Set init position
+		var cannonLength = 60;
+		var deltaX = cannonLength * Math.sin(this.alpha);
+		var deltaY = cannonLength * Math.cos(this.alpha);
+		this.x = owner.x + deltaX - 5;
+		this.y = owner.y - deltaY - 5;	
+	}else{
+		this.x = initX;
+		this.y = initY;
+	}
 
 	this.materialize();
 }
@@ -150,7 +150,11 @@ Ball.prototype = {
 
 	materialize: function(){
 		this.isOutOfBounds = false;
-		this.$arena.append('<div id="' + this.id + '" class="cannon-ball"></div>');
+		var isLocal = "";
+		if(!this.isLocal){
+			isLocal = 'foreign-ball';
+		}
+		this.$arena.append('<div id="' + this.id + '" class="cannon-ball ' + isLocal + '"></div>');
 		this.$body = $('#' + this.id);
 		this.$body.css('left', this.x + 'px');
 		this.$body.css('top', this.y + 'px');
@@ -397,9 +401,10 @@ Tank.prototype = {
 	},
 
 	shoot: function(){
-		var ballId = 'ball-' + this.game.lastBallId;
+		var ballId = 'ball-' + this.id + this.game.lastBallId;
 		this.game.increaseLastBallId();
-		this.game.addBall(ballId, this);
+		var newBall = new Ball(ballId, this, this.$arena, true);
+		this.game.addLocalBall(newBall);
 	}
 
 }
