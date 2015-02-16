@@ -1,6 +1,7 @@
 var express = require('express');
 var app = express();
 var counter = 0;
+var BALL_SPEED = 10;
 
 //Static resources server
 app.use(express.static(__dirname + '/www'));
@@ -13,12 +14,17 @@ var server = app.listen(8080, function () {
 function GameServer(){
 	this.tanks = [];
 	this.balls = [];
+	this.lastBallId = 0;
 }
 
 GameServer.prototype = {
 	
 	addTank: function(tank){
 		this.tanks.push(tank);
+	},
+
+	addBall: function(ball){
+		this.balls.push(ball);
 	},
 
 	removeTank: function(tankId){
@@ -38,8 +44,11 @@ GameServer.prototype = {
 		});
 	},
 
-	syncBalls: function(newBalls){
-		this.balls = newBalls;
+	//The app has absolute control of the balls and their movement
+	syncBalls: function(){
+		this.balls.forEach( function(ball){
+			ball.fly();
+		});
 	},
 
 	getData: function(){
@@ -47,6 +56,13 @@ GameServer.prototype = {
 		gameData.tanks = this.tanks;
 		gameData.balls = this.balls;
 		return gameData;
+	},
+
+	increaseLastBallId: function(){
+		this.lastBallId ++;
+		if(this.lastBallId > 1000){
+			this.lastBallId = 0;
+		}
 	}
 
 }
@@ -74,21 +90,45 @@ io.on('connection', function(client) {
 		if(data.tank != undefined){
 			game.syncTank(data.tank);
 		}
-		if(data.balls != undefined){
-			game.syncBalls(data.balls);
-		}
+		//update ball positions
+		game.syncBalls();
 		//Broadcast data to clients
+		client.emit('sync', game.getData());
 		client.broadcast.emit('sync', game.getData());
 		counter ++;
 	});
 
-	client.on('leaveGame', function(tankId){
-		game.removeTank(tankId);
-		console.log(tankId + ' has left the game');
+	client.on('shoot', function(ball){
+		var ball = new Ball(ball.ownerId, ball.alpha, ball.x, ball.y );
+		game.addBall(ball);
+	});
+
+	client.on('pause', function(tankId){
 		client.broadcast.emit('removeTank', tankId);
 	});
 
 });
+
+function Ball(ownerId, alpha, x, y){
+	this.id = game.lastBallId;
+	game.increaseLastBallId();
+	this.ownerId = ownerId;
+	this.alpha = alpha; //angle of shot in radians
+	this.x = x;
+	this.y = y;
+}
+
+Ball.prototype = {
+
+	fly: function(){
+		//move to trayectory
+		var speedX = BALL_SPEED * Math.sin(this.alpha);
+		var speedY = -BALL_SPEED * Math.cos(this.alpha);
+		this.x += speedX;
+		this.y += speedY;
+	}
+
+}
 
 function getRandomInt(min, max) {
 	return Math.floor(Math.random() * (max - min)) + min;

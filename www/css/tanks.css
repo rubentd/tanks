@@ -36,6 +36,9 @@ body{
 	background-image: url(../img/tank-cannon.png);
 	background-position: -10px 0;
 	-webkit-transform-origin: 30px 65px;
+	   -moz-transform-origin: 30px 65px;
+		 -o-transform-origin: 30px 65px;
+			transform-origin: 30px 65px;
 }
 
 .cannon-ball{
@@ -43,6 +46,9 @@ body{
 	width: 10px;
 	height: 10px;
 	-webkit-border-radius: 5px;
+	   -moz-border-radius: 5px;
+		 -o-border-radius: 5px;
+			border-radius: 5px;	
 	background-color: #5e5e5e;
 }
 
@@ -105,6 +111,9 @@ body{
 .tank-selection li.selected{
 	border: 2px solid #158cba;
 	-webkit-border-radius: 5px;
+	   -moz-border-radius: 5px;
+		 -o-border-radius: 5px;
+			border-radius: 5px;
 	border-radius: 5px;
 }
 

@@ -1,13 +1,11 @@
 var DEBUG = true;
 var INTERVAL = 50;
 var ROTATION_SPEED = 5;
-var BALL_SPEED = 10;
 var ARENA_MARGIN = 30;
 
 function Game(arenaId, w, h, socket){
 	this.tanks = []; //Tanks (other than the local tank)
-	this.localBalls = [];
-	this.lastBallId = 0;
+	this.balls = [];
 	this.width = w;
 	this.height = h;
 	this.$arena = $(arenaId);
@@ -41,32 +39,20 @@ Game.prototype = {
 		$('#info-' + tankId).remove();
 	},
 
-	addLocalBall: function(ball){
-		this.localBalls.push(ball);
+	addBall: function(ball){
+		this.balls.push(ball);
 	},
 
 	mainLoop: function(){
 		if(this.localTank != undefined){
-			this.sendData(); //send data to server about local tank and bullets
+			this.sendData(); //send data to server about local tank 
 		}
 		
-		//move local tank
 		if(this.localTank != undefined){
+			//move local tank
 			this.localTank.move();
-			//Move local balls
-			this.localBalls.forEach( function(ball){
-				ball.fly();
-			});
-			this.localBalls = this.localBalls.filter( function(b){return !b.isOutOfBounds} );
 		}
 		
-	},
-
-	increaseLastBallId: function(){
-		this.lastBallId ++;
-		if(this.lastBallId > 1000){
-			this.lastBallId = 0;
-		}
 	},
 
 	sendData: function(){
@@ -82,18 +68,15 @@ Game.prototype = {
 			cannonAngle: this.localTank.cannonAngle  
 		};
 		gameData.tank = t;
-		
-		//Send local balls data
-		gameData.balls = [];
-		this.localBalls.forEach( function(ball){
-			gameData.balls.push({id: ball.id, x: ball.x, y: ball.y, ownerId: ball.owner.id});
-		});
+		//Client game does not send any info about balls, 
+		//the server controls that part 
 		this.socket.emit('sync', gameData);
 	},
 
 	receiveData: function(serverData){
 		var game = this;
 		
+		//update foreign tanks
 		serverData.tanks.forEach( function(serverTank){
 			var found = false;
 			game.tanks.forEach( function(clientTank){
@@ -114,34 +97,22 @@ Game.prototype = {
 			}
 		});
 
-		game.$arena.find('.foreign-ball').remove();
-		//sync balls (have to solve id problem concat tank id)
+		//Render balls
+		game.$arena.find('.cannon-ball').remove();
+		console.log('received info about ' + serverData.balls.length + ' balls');
+
 		serverData.balls.forEach( function(serverBall){
-			//Delete balls from dom
-			var b = new Ball(serverBall.id, undefined, game.$arena, false, serverBall.x, serverBall.y); 
+			var b = new Ball(serverBall.id, serverBall.ownerId, game.$arena, serverBall.x, serverBall.y); 
 		});
 	}
 }
 
-function Ball(id, owner, $arena, isLocal, initX, initY){
+function Ball(id, ownerId, $arena, x, y){
 	this.id = id;
-	this.owner = owner;
+	this.ownerId = ownerId;
 	this.$arena = $arena;
-	this.isLocal = isLocal;
-	
-	//Just for local balls who have owner
-	if(owner != undefined){
-		this.alpha = this.owner.cannonAngle * Math.PI / 180; //angle of shot in radians	
-		//Set init position
-		var cannonLength = 60;
-		var deltaX = cannonLength * Math.sin(this.alpha);
-		var deltaY = cannonLength * Math.cos(this.alpha);
-		this.x = owner.x + deltaX - 5;
-		this.y = owner.y - deltaY - 5;	
-	}else{
-		this.x = initX;
-		this.y = initY;
-	}
+	this.x = x;
+	this.y = y;
 
 	this.materialize();
 }
@@ -149,39 +120,10 @@ function Ball(id, owner, $arena, isLocal, initX, initY){
 Ball.prototype = {
 
 	materialize: function(){
-		this.isOutOfBounds = false;
-		var isLocal = "";
-		if(!this.isLocal){
-			isLocal = 'foreign-ball';
-		}
-		this.$arena.append('<div id="' + this.id + '" class="cannon-ball ' + isLocal + '"></div>');
+		this.$arena.append('<div id="' + this.id + '" class="cannon-ball" style="left:' + this.x + 'px"></div>');
 		this.$body = $('#' + this.id);
 		this.$body.css('left', this.x + 'px');
 		this.$body.css('top', this.y + 'px');
-	},
-
-	fly: function(){
-		//move to trayectory
-		var speedX = BALL_SPEED * Math.sin(this.alpha);
-		var speedY = -BALL_SPEED * Math.cos(this.alpha);
-		this.x += speedX;
-		this.y += speedY;
-		this.refresh();
-	},
-
-	refresh: function(){
-		this.$body.css('left', this.x + 'px');
-		this.$body.css('top', this.y + 'px');
-
-		//Delete if out of bounds
-		if(this.y > this.$arena.height() || 
-			this.x > this.$arena.width() || 
-				this.x < 0 || this.y < 0){
-
-			this.isOutOfBounds = true;
-			this.$body.remove();
-
-		}
 	}
 
 }
@@ -213,7 +155,12 @@ Tank.prototype = {
 		this.$body = $('#' + this.id);
 		this.$body.css('width', this.w);
 		this.$body.css('height', this.h);
+
 		this.$body.css('-webkit-transform', 'rotateZ(' + this.baseAngle + 'deg)');
+		this.$body.css('-moz-transform', 'rotateZ(' + this.baseAngle + 'deg)');
+		this.$body.css('-o-transform', 'rotateZ(' + this.baseAngle + 'deg)');
+		this.$body.css('transform', 'rotateZ(' + this.baseAngle + 'deg)');
+
 		this.$body.append('<div id="cannon-' + this.id + '" class="tank-cannon"></div>');
 		this.$cannon = $('#cannon-' + this.id);
 		
@@ -240,8 +187,15 @@ Tank.prototype = {
 		this.$body.css('left', this.x - 30 + 'px');
 		this.$body.css('top', this.y - 40 + 'px');
 		this.$body.css('-webkit-transform', 'rotateZ(' + this.baseAngle + 'deg)');
+		this.$body.css('-moz-transform', 'rotateZ(' + this.baseAngle + 'deg)');
+		this.$body.css('-o-transform', 'rotateZ(' + this.baseAngle + 'deg)');
+		this.$body.css('transform', 'rotateZ(' + this.baseAngle + 'deg)');
+
 		var cannonAbsAngle = this.cannonAngle - this.baseAngle;
 		this.$cannon.css('-webkit-transform', 'rotateZ(' + cannonAbsAngle + 'deg)');
+		this.$cannon.css('-moz-transform', 'rotateZ(' + cannonAbsAngle + 'deg)');
+		this.$cannon.css('-o-transform', 'rotateZ(' + cannonAbsAngle + 'deg)');
+		this.$cannon.css('transform', 'rotateZ(' + cannonAbsAngle + 'deg)');
 
 		this.$info.css('left', (this.x) + 'px');
 		this.$info.css('top', (this.y) + 'px');
@@ -401,10 +355,20 @@ Tank.prototype = {
 	},
 
 	shoot: function(){
-		var ballId = 'ball-' + this.id + this.game.lastBallId;
-		this.game.increaseLastBallId();
-		var newBall = new Ball(ballId, this, this.$arena, true);
-		this.game.addLocalBall(newBall);
+		//Emit ball to server
+		var serverBall = {};
+		//Just for local balls who have owner
+		serverBall.alpha = this.cannonAngle * Math.PI / 180; //angle of shot in radians	
+		//Set init position
+		var cannonLength = 60;
+		var deltaX = cannonLength * Math.sin(serverBall.alpha);
+		var deltaY = cannonLength * Math.cos(serverBall.alpha);
+		
+		serverBall.ownerId = this.id;
+		serverBall.x = this.x + deltaX - 5;
+		serverBall.y = this.y - deltaY - 5;	
+
+		this.game.socket.emit('shoot', serverBall);
 	}
 
 }
