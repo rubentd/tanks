@@ -2,6 +2,8 @@ var express = require('express');
 var app = express();
 var counter = 0;
 var BALL_SPEED = 10;
+var WIDTH = 1100;
+var HEIGHT = 580;
 
 //Static resources server
 app.use(express.static(__dirname + '/www'));
@@ -46,8 +48,17 @@ GameServer.prototype = {
 
 	//The app has absolute control of the balls and their movement
 	syncBalls: function(){
+		//Detect when ball is out of bounds
 		this.balls.forEach( function(ball){
-			ball.fly();
+			if(ball.x < 0 || ball.x > WIDTH
+				|| ball.y < 0 || ball.y > HEIGHT){
+				ball.out = true;
+			}else{
+				ball.fly();
+			}
+		});
+		this.balls = this.balls.filter(function(ball){
+			return !ball.out;
 		});
 	},
 
@@ -116,6 +127,7 @@ function Ball(ownerId, alpha, x, y){
 	this.alpha = alpha; //angle of shot in radians
 	this.x = x;
 	this.y = y;
+	this.out = false;
 }
 
 Ball.prototype = {
