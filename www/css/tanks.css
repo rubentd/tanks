@@ -28,6 +28,13 @@ body{
 	background-position: -10px 0;
 }
 
+.explosion{
+	position: absolute;
+	width: 100px;
+	height: 120px;
+	z-index: 99;
+}
+
 .tank-cannon{
 	position: absolute;
 	top: -25px;

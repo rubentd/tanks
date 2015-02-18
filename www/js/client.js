@@ -1,6 +1,6 @@
 var WIDTH = 1100;
 var HEIGHT = 580;
-var socket = io.connect('http://104.236.84.239:8080');
+var socket = io.connect('localhost:8080');
 var game = new Game('#arena', WIDTH, HEIGHT, socket);
 var selectedTank = 1;
 var tankName = '';
@@ -11,6 +11,10 @@ socket.on('addTank', function(tank){
 
 socket.on('sync', function(gameServerData){
 	game.receiveData(gameServerData);
+});
+
+socket.on('killTank', function(tankData){
+	game.killTank(tankData);
 });
 
 socket.on('removeTank', function(tankId){

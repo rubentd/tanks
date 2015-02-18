@@ -11,7 +11,6 @@ function Game(arenaId, w, h, socket){
 	this.$arena = $(arenaId);
 	this.$arena.css('width', w);
 	this.$arena.css('height', h);
-	this.hp = 100;
 	this.socket = socket;
 
 	var g = this;
@@ -22,8 +21,8 @@ function Game(arenaId, w, h, socket){
 
 Game.prototype = {
 
-	addTank: function(id, type, isLocal, x, y){
-		var t = new Tank(id, type, this.$arena, this, isLocal, x, y);
+	addTank: function(id, type, isLocal, x, y, hp){
+		var t = new Tank(id, type, this.$arena, this, isLocal, x, y, hp);
 		if(isLocal){
 			this.localTank = t;
 		}else{
@@ -37,6 +36,19 @@ Game.prototype = {
 		//remove tank from dom
 		$('#' + tankId).remove();
 		$('#info-' + tankId).remove();
+	},
+
+	killTank: function(tank){
+		this.removeTank(tank.id);
+		//place explosion
+		this.$arena.append('<img id="expl' + tank.id + '" class="explosion" src="./img/explosion.gif">');
+		$('#expl' + tank.id).css('left', (tank.x - 50)  + 'px');
+		$('#expl' + tank.id).css('top', (tank.y - 100)  + 'px');
+
+		setTimeout(function(){
+			$('#expl' + tank.id).remove();
+		}, 1000);
+
 	},
 
 	addBall: function(ball){
@@ -65,7 +77,7 @@ Game.prototype = {
 			x: this.localTank.x,
 			y: this.localTank.y,
 			baseAngle: this.localTank.baseAngle,
-			cannonAngle: this.localTank.cannonAngle  
+			cannonAngle: this.localTank.cannonAngle
 		};
 		gameData.tank = t;
 		//Client game does not send any info about balls, 
@@ -75,17 +87,30 @@ Game.prototype = {
 
 	receiveData: function(serverData){
 		var game = this;
-		
-		//update foreign tanks
+
 		serverData.tanks.forEach( function(serverTank){
+
+			//Update local tank stats
+			if(game.localTank !== undefined && serverTank.id == game.localTank.id){
+				game.localTank.hp = serverTank.hp;
+				if(game.localTank.hp == 0){
+					game.killTank(game.localTank);
+				}
+			}
+
+			//Update foreign tanks
 			var found = false;
 			game.tanks.forEach( function(clientTank){
-				//Find a match and update it
+				//update foreign tanks
 				if(clientTank.id == serverTank.id){
 					clientTank.x = serverTank.x;
 					clientTank.y = serverTank.y;
 					clientTank.baseAngle = serverTank.baseAngle;
 					clientTank.cannonAngle = serverTank.cannonAngle;
+					clientTank.hp = serverTank.hp;
+					if(clientTank.hp == 0){
+						game.killTank(clientTank);
+					}
 					clientTank.refresh();
 					found = true;
 				}
@@ -93,14 +118,13 @@ Game.prototype = {
 			if(!found && 
 				(game.localTank == undefined || serverTank.id != game.localTank.id)){ 
 				//I need to create it
-				game.addTank(serverTank.id, serverTank.type, false, serverTank.x, serverTank.y);
+				game.addTank(serverTank.id, serverTank.type, false, serverTank.x, serverTank.y, serverTank.hp);
 			}
 		});
 
 		//Render balls
 		game.$arena.find('.cannon-ball').remove();
-		console.log('received info about ' + serverData.balls.length + ' balls');
-
+		
 		serverData.balls.forEach( function(serverBall){
 			var b = new Ball(serverBall.id, serverBall.ownerId, game.$arena, serverBall.x, serverBall.y); 
 		});
@@ -128,7 +152,7 @@ Ball.prototype = {
 
 }
 
-function Tank(id, type, $arena, game, isLocal, x, y){
+function Tank(id, type, $arena, game, isLocal, x, y, hp){
 	this.id = id;
 	this.type = type;
 	this.speed = 5;
@@ -144,6 +168,7 @@ function Tank(id, type, $arena, game, isLocal, x, y){
 	this.dir = [0, 0, 0, 0];
 	this.game = game;
 	this.isLocal = isLocal;
+	this.hp = hp;
 
 	this.materialize();
 }
@@ -168,7 +193,7 @@ Tank.prototype = {
 		this.$info = $('#info-' + this.id);
 		this.$info.append('<div class="label">' + this.id + '</div>');
 		this.$info.append('<div class="hp-bar"></div>');
-
+		
 		this.refresh();
 
 		if(this.isLocal){
@@ -206,6 +231,7 @@ Tank.prototype = {
 		}
 
 		this.$info.find('.hp-bar').css('width', this.hp + 'px');
+		this.$info.find('.hp-bar').css('background-color', getGreenToRed(this.hp));
 	},
 
 	setControls: function(){
@@ -381,4 +407,10 @@ function debug(msg){
 
 function getRandomInt(min, max) {
 	return Math.floor(Math.random() * (max - min)) + min;
+}
+
+function getGreenToRed(percent){
+	r = percent<50 ? 255 : Math.floor(255-(percent*2-100)*255/100);
+	g = percent>50 ? 255 : Math.floor((percent*2)*255/100);
+	return 'rgb('+r+','+g+',0)';
 }
