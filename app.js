@@ -74,7 +74,6 @@ GameServer.prototype = {
 			if(tank.id != ball.ownerId 
 				&& Math.abs(tank.x - ball.x) < 40
 				&& Math.abs(tank.y - ball.y) < 40){
-				tank.alive = false;
 				//Hit tank
 				self.hurtTank(tank);
 				ball.out = true;
@@ -91,8 +90,6 @@ GameServer.prototype = {
 		gameData.tanks = this.tanks;
 		gameData.balls = this.balls;
 
-		//I do the cleanup after sending data, so the clients know the tank dies
-		this.cleanDeadTanks();
 		return gameData;
 	},
 
@@ -140,6 +137,9 @@ io.on('connection', function(client) {
 		//Broadcast data to clients
 		client.emit('sync', game.getData());
 		client.broadcast.emit('sync', game.getData());
+
+		//I do the cleanup after sending data, so the clients know the tank dies
+		game.cleanDeadTanks();
 		counter ++;
 	});
 

@@ -39,6 +39,7 @@ Game.prototype = {
 	},
 
 	killTank: function(tank){
+		tank.dead = true;
 		this.removeTank(tank.id);
 		//place explosion
 		this.$arena.append('<img id="expl' + tank.id + '" class="explosion" src="./img/explosion.gif">');
@@ -93,7 +94,7 @@ Game.prototype = {
 			//Update local tank stats
 			if(game.localTank !== undefined && serverTank.id == game.localTank.id){
 				game.localTank.hp = serverTank.hp;
-				if(game.localTank.hp == 0){
+				if(game.localTank.hp <= 0){
 					game.killTank(game.localTank);
 				}
 			}
@@ -108,7 +109,7 @@ Game.prototype = {
 					clientTank.baseAngle = serverTank.baseAngle;
 					clientTank.cannonAngle = serverTank.cannonAngle;
 					clientTank.hp = serverTank.hp;
-					if(clientTank.hp == 0){
+					if(clientTank.hp <= 0){
 						game.killTank(clientTank);
 					}
 					clientTank.refresh();
@@ -169,6 +170,7 @@ function Tank(id, type, $arena, game, isLocal, x, y, hp){
 	this.game = game;
 	this.isLocal = isLocal;
 	this.hp = hp;
+	this.dead = false;
 
 	this.materialize();
 }
@@ -283,6 +285,10 @@ Tank.prototype = {
 	},
 
 	move: function(){
+		if(this.dead){
+			return;
+		}
+
 		var moveX = this.speed * this.dir[0];
 		var moveY = this.speed * this.dir[1]
 		if(this.x + moveX > (0 + ARENA_MARGIN) && (this.x + moveX) < (this.$arena.width() - ARENA_MARGIN)){
@@ -381,6 +387,10 @@ Tank.prototype = {
 	},
 
 	shoot: function(){
+		if(this.dead){
+			return;
+		}
+
 		//Emit ball to server
 		var serverBall = {};
 		//Just for local balls who have owner
