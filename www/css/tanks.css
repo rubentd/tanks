@@ -59,6 +59,36 @@ body{
 	background-color: #5e5e5e;
 }
 
+.ball-explosion{
+	position: absolute;
+	display: inline-block;
+	background-color: #873B05;
+	width: 10px;
+	height: 10px;
+	opacity: 1;
+	-webkit-border-radius: 5px;
+	   -moz-border-radius: 5px;
+		 -o-border-radius: 5px;
+			border-radius: 5px;
+	-webkit-transition: all .3s ease-out;
+	   -moz-transition: all .3s ease-out;
+		 -o-transition: all .3s ease-out;
+			transition: all .3s ease-out;	
+}
+
+.ball-explosion.expand{
+	width: 50px;
+	height: 50px;
+	background-color: #FCD700;
+	opacity: 0;
+	margin-left: -25px;
+	margin-top: -25px;
+	-webkit-border-radius: 25px;
+	    moz-border-radius: 25px;
+		 -o-border-radius: 25px;
+			border-radius: 25px;
+}
+
 .info{
 	width: 100px;
 	height: 40px;

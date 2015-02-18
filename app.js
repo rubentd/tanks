@@ -61,9 +61,6 @@ GameServer.prototype = {
 				ball.fly();
 			}
 		});
-		this.balls = this.balls.filter(function(ball){
-			return !ball.out;
-		});
 	},
 
 	//Detect if ball collides with any tank
@@ -72,11 +69,12 @@ GameServer.prototype = {
 
 		this.tanks.forEach( function(tank){
 			if(tank.id != ball.ownerId 
-				&& Math.abs(tank.x - ball.x) < 40
-				&& Math.abs(tank.y - ball.y) < 40){
+				&& Math.abs(tank.x - ball.x) < 30
+				&& Math.abs(tank.y - ball.y) < 30){
 				//Hit tank
 				self.hurtTank(tank);
 				ball.out = true;
+				ball.exploding = true;
 			}
 		});
 	},
@@ -96,6 +94,12 @@ GameServer.prototype = {
 	cleanDeadTanks: function(){
 		this.tanks = this.tanks.filter(function(t){
 			return t.hp > 0;
+		});
+	},
+
+	cleanDeadBalls: function(){
+		this.balls = this.balls.filter(function(ball){
+			return !ball.out;
 		});
 	},
 
@@ -138,8 +142,10 @@ io.on('connection', function(client) {
 		client.emit('sync', game.getData());
 		client.broadcast.emit('sync', game.getData());
 
-		//I do the cleanup after sending data, so the clients know the tank dies
+		//I do the cleanup after sending data, so the clients know 
+		//when the tank dies and when the balls explode
 		game.cleanDeadTanks();
+		game.cleanDeadBalls();
 		counter ++;
 	});
 

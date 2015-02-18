@@ -128,6 +128,10 @@ Game.prototype = {
 		
 		serverData.balls.forEach( function(serverBall){
 			var b = new Ball(serverBall.id, serverBall.ownerId, game.$arena, serverBall.x, serverBall.y); 
+			b.exploding = serverBall.exploding;
+			if(b.exploding){
+				b.explode();
+			}
 		});
 	}
 }
@@ -149,6 +153,19 @@ Ball.prototype = {
 		this.$body = $('#' + this.id);
 		this.$body.css('left', this.x + 'px');
 		this.$body.css('top', this.y + 'px');
+	},
+
+	explode: function(){
+		this.$arena.append('<div id="expl' + this.id + '" class="ball-explosion" style="left:' + this.x + 'px"></div>');
+		var $expl = $('#expl' + this.id);
+		$expl.css('left', this.x + 'px');
+		$expl.css('top', this.y + 'px');
+		setTimeout( function(){
+			$expl.addClass('expand');
+		}, 1);
+		setTimeout( function(){
+			$expl.remove();
+		}, 1000);
 	}
 
 }
