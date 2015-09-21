@@ -1,5 +1,4 @@
 var express = require('express');
-var io = require('socket.io')(server);
 var app = express();
 var counter = 0;
 var BALL_SPEED = 10;
@@ -14,6 +13,8 @@ var server = app.listen(8082, function () {
 	var port = server.address().port;
 	console.log('Server running at port %s', port);
 });
+
+var io = require('socket.io')(server);
 
 function GameServer(){
 	this.tanks = [];
