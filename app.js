@@ -1,4 +1,5 @@
 var express = require('express');
+var io = require('socket.io')(server);
 var app = express();
 var counter = 0;
 var BALL_SPEED = 10;
@@ -113,8 +114,6 @@ GameServer.prototype = {
 }
 
 var game = new GameServer();
-
-var io = require('socket.io')(server);
 
 /* Connection events */
 
