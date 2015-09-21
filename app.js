@@ -10,7 +10,7 @@ var TANK_INIT_HP = 100;
 //Static resources server
 app.use(express.static(__dirname + '/www'));
 
-var server = app.listen(8080, function () {
+var server = app.listen(8082, function () {
 	var port = server.address().port;
 	console.log('Server running at port %s', port);
 });
