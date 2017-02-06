@@ -9,7 +9,7 @@ var TANK_INIT_HP = 100;
 //Static resources server
 app.use(express.static(__dirname + '/www'));
 
-var server = app.listen(8082, function () {
+var server = app.listen(process.env.PORT || 8082, function () {
 	var port = server.address().port;
 	console.log('Server running at port %s', port);
 });
@@ -23,7 +23,7 @@ function GameServer(){
 }
 
 GameServer.prototype = {
-	
+
 	addTank: function(tank){
 		this.tanks.push(tank);
 	},
@@ -70,7 +70,7 @@ GameServer.prototype = {
 		var self = this;
 
 		this.tanks.forEach( function(tank){
-			if(tank.id != ball.ownerId 
+			if(tank.id != ball.ownerId
 				&& Math.abs(tank.x - ball.x) < 30
 				&& Math.abs(tank.y - ball.y) < 30){
 				//Hit tank
@@ -127,7 +127,7 @@ io.on('connection', function(client) {
 		var initY = getRandomInt(40, 500);
 		client.emit('addTank', { id: tank.id, type: tank.type, isLocal: true, x: initX, y: initY, hp: TANK_INIT_HP });
 		client.broadcast.emit('addTank', { id: tank.id, type: tank.type, isLocal: false, x: initX, y: initY, hp: TANK_INIT_HP} );
-		
+
 		game.addTank({ id: tank.id, type: tank.type, hp: TANK_INIT_HP});
 	});
 
@@ -142,7 +142,7 @@ io.on('connection', function(client) {
 		client.emit('sync', game.getData());
 		client.broadcast.emit('sync', game.getData());
 
-		//I do the cleanup after sending data, so the clients know 
+		//I do the cleanup after sending data, so the clients know
 		//when the tank dies and when the balls explode
 		game.cleanDeadTanks();
 		game.cleanDeadBalls();
