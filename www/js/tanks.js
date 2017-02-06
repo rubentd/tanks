@@ -58,22 +58,22 @@ Game.prototype = {
 
 	mainLoop: function(){
 		if(this.localTank != undefined){
-			this.sendData(); //send data to server about local tank 
+			this.sendData(); //send data to server about local tank
 		}
-		
+
 		if(this.localTank != undefined){
 			//move local tank
 			this.localTank.move();
 		}
-		
+
 	},
 
 	sendData: function(){
 		//Send local data to server
 		var gameData = {};
-		
+
 		//Send tank data
-		var t = { 
+		var t = {
 			id: this.localTank.id,
 			x: this.localTank.x,
 			y: this.localTank.y,
@@ -81,8 +81,8 @@ Game.prototype = {
 			cannonAngle: this.localTank.cannonAngle
 		};
 		gameData.tank = t;
-		//Client game does not send any info about balls, 
-		//the server controls that part 
+		//Client game does not send any info about balls,
+		//the server controls that part
 		this.socket.emit('sync', gameData);
 	},
 
@@ -116,8 +116,8 @@ Game.prototype = {
 					found = true;
 				}
 			});
-			if(!found && 
-				(game.localTank == undefined || serverTank.id != game.localTank.id)){ 
+			if(!found &&
+				(game.localTank == undefined || serverTank.id != game.localTank.id)){
 				//I need to create it
 				game.addTank(serverTank.id, serverTank.type, false, serverTank.x, serverTank.y, serverTank.hp);
 			}
@@ -125,9 +125,9 @@ Game.prototype = {
 
 		//Render balls
 		game.$arena.find('.cannon-ball').remove();
-		
+
 		serverData.balls.forEach( function(serverBall){
-			var b = new Ball(serverBall.id, serverBall.ownerId, game.$arena, serverBall.x, serverBall.y); 
+			var b = new Ball(serverBall.id, serverBall.ownerId, game.$arena, serverBall.x, serverBall.y);
 			b.exploding = serverBall.exploding;
 			if(b.exploding){
 				b.explode();
@@ -193,7 +193,7 @@ function Tank(id, type, $arena, game, isLocal, x, y, hp){
 }
 
 Tank.prototype = {
-	
+
 	materialize: function(){
 		this.$arena.append('<div id="' + this.id + '" class="tank tank' + this.type + '"></div>');
 		this.$body = $('#' + this.id);
@@ -207,12 +207,12 @@ Tank.prototype = {
 
 		this.$body.append('<div id="cannon-' + this.id + '" class="tank-cannon"></div>');
 		this.$cannon = $('#cannon-' + this.id);
-		
+
 		this.$arena.append('<div id="info-' + this.id + '" class="info"></div>');
 		this.$info = $('#info-' + this.id);
 		this.$info.append('<div class="label">' + this.id + '</div>');
 		this.$info.append('<div class="hp-bar"></div>');
-		
+
 		this.refresh();
 
 		if(this.isLocal){
@@ -274,7 +274,7 @@ Tank.prototype = {
 					t.dir[0] = -1;
 					break;
 			}
-			
+
 		}).keyup( function(e){
 			var k = e.keyCode || e.which;
 			switch(k){
@@ -292,8 +292,8 @@ Tank.prototype = {
 					break;
 			}
 		}).mousemove( function(e){ //Detect mouse for aiming
-			var mx = event.pageX - t.$arena.offset().left;
-			var my = event.pageY - t.$arena.offset().top;
+			var mx = e.pageX - t.$arena.offset().left;
+			var my = e.pageY - t.$arena.offset().top;
 			t.setCannonAngle(mx, my);
 		}).click( function(){
 			t.shoot();
@@ -320,10 +320,10 @@ Tank.prototype = {
 
 	/* Rotate base of tank to match movement direction */
 	rotateBase: function(){
-		if((this.dir[0] == 1 && this.dir[1] == 1) 
+		if((this.dir[0] == 1 && this.dir[1] == 1)
 			|| (this.dir[0] == -1 && this.dir[1] == -1)){ //diagonal "left"
 			this.setDiagonalLeft();
-		}else if((this.dir[0] == 1 && this.dir[1] == -1) 
+		}else if((this.dir[0] == 1 && this.dir[1] == -1)
 			|| (this.dir[0] == -1 && this.dir[1] == 1)){ //diagonal "right"
 			this.setDiagonalRight();
 		}else if(this.dir[1] == 1 || this.dir[1] == -1){ //vertical
@@ -411,15 +411,15 @@ Tank.prototype = {
 		//Emit ball to server
 		var serverBall = {};
 		//Just for local balls who have owner
-		serverBall.alpha = this.cannonAngle * Math.PI / 180; //angle of shot in radians	
+		serverBall.alpha = this.cannonAngle * Math.PI / 180; //angle of shot in radians
 		//Set init position
 		var cannonLength = 60;
 		var deltaX = cannonLength * Math.sin(serverBall.alpha);
 		var deltaY = cannonLength * Math.cos(serverBall.alpha);
-		
+
 		serverBall.ownerId = this.id;
 		serverBall.x = this.x + deltaX - 5;
-		serverBall.y = this.y - deltaY - 5;	
+		serverBall.y = this.y - deltaY - 5;
 
 		this.game.socket.emit('shoot', serverBall);
 	}
