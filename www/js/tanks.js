@@ -183,6 +183,8 @@ function Tank(id, type, $arena, game, isLocal, x, y, hp){
 	this.cannonAngle = 0;
 	this.x = x;
 	this.y = y;
+	this.mx = null;
+	this.my = null;
 	this.dir = [0, 0, 0, 0];
 	this.game = game;
 	this.isLocal = isLocal;
@@ -292,9 +294,9 @@ Tank.prototype = {
 					break;
 			}
 		}).mousemove( function(e){ //Detect mouse for aiming
-			var mx = e.pageX - t.$arena.offset().left;
-			var my = e.pageY - t.$arena.offset().top;
-			t.setCannonAngle(mx, my);
+			t.mx = e.pageX - t.$arena.offset().left;
+			t.my = e.pageY - t.$arena.offset().top;
+			t.setCannonAngle();
 		}).click( function(){
 			t.shoot();
 		});
@@ -315,6 +317,7 @@ Tank.prototype = {
 			this.y += moveY;
 		}
 		this.rotateBase();
+		this.setCannonAngle();
 		this.refresh();
 	},
 
@@ -394,11 +397,10 @@ Tank.prototype = {
 		}
 	},
 
-	setCannonAngle: function(mx, my){
+	setCannonAngle: function(){
 		var tank = { x: this.x , y: this.y};
-		var mouse = { x: mx, y: my};
-		var deltaX = mouse.x - tank.x;
-		var deltaY = mouse.y - tank.y;
+		var deltaX = this.mx - tank.x;
+		var deltaY = this.my - tank.y;
 		this.cannonAngle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
 		this.cannonAngle += 90;
 	},
