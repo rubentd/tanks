@@ -52,20 +52,13 @@ Game.prototype = {
 
 	},
 
-	addBall: function(ball){
-		this.balls.push(ball);
-	},
-
 	mainLoop: function(){
 		if(this.localTank != undefined){
-			this.sendData(); //send data to server about local tank
-		}
-
-		if(this.localTank != undefined){
+			//send data to server about local tank
+			this.sendData();
 			//move local tank
 			this.localTank.move();
 		}
-
 	},
 
 	sendData: function(){
@@ -185,7 +178,12 @@ function Tank(id, type, $arena, game, isLocal, x, y, hp){
 	this.y = y;
 	this.mx = null;
 	this.my = null;
-	this.dir = [0, 0, 0, 0];
+	this.dir = {
+		up: false,
+		down: false,
+		left: false,
+		right: false
+	};
 	this.game = game;
 	this.isLocal = isLocal;
 	this.hp = hp;
@@ -223,10 +221,7 @@ Tank.prototype = {
 	},
 
 	isMoving: function(){
-		if(this.dir[0] != 0 || this.dir[1] != 0){
-			return true;
-		}
-		return false;
+		return this.dir.up || this.dir.down || this.dir.left || this.dir.right;
 	},
 
 	refresh: function(){
@@ -264,16 +259,16 @@ Tank.prototype = {
 			var k = e.keyCode || e.which;
 			switch(k){
 				case 119: //W
-					t.dir[1] = -1;
+					t.dir.up = true;
 					break;
 				case 100: //D
-					t.dir[0] = 1;
+					t.dir.right = true;
 					break;
 				case 115: //S
-					t.dir[1] = 1;
+					t.dir.down = true;
 					break;
 				case 97: //A
-					t.dir[0] = -1;
+					t.dir.left = true;
 					break;
 			}
 
@@ -281,16 +276,16 @@ Tank.prototype = {
 			var k = e.keyCode || e.which;
 			switch(k){
 				case 87: //W
-					t.dir[1] = 0;
+					t.dir.up = false;
 					break;
 				case 68: //D
-					t.dir[0] = 0;
+					t.dir.right = false;
 					break;
 				case 83: //S
-					t.dir[1] = 0;
+					t.dir.down = false;
 					break;
 				case 65: //A
-					t.dir[0] = 0;
+					t.dir.left = false;
 					break;
 			}
 		}).mousemove( function(e){ //Detect mouse for aiming
@@ -308,8 +303,23 @@ Tank.prototype = {
 			return;
 		}
 
-		var moveX = this.speed * this.dir[0];
-		var moveY = this.speed * this.dir[1]
+		var moveX = 0;
+		var moveY = 0;
+
+		if (this.dir.up) {
+			moveY = -1;
+		} else if (this.dir.down) {
+			moveY = 1;
+		}
+		if (this.dir.left) {
+			moveX = -1;
+		} else if (this.dir.right) {
+			moveX = 1;
+		}
+
+		moveX = this.speed * moveX;
+		moveY = this.speed * moveY;
+
 		if(this.x + moveX > (0 + ARENA_MARGIN) && (this.x + moveX) < (this.$arena.width() - ARENA_MARGIN)){
 			this.x += moveX;
 		}
@@ -323,15 +333,15 @@ Tank.prototype = {
 
 	/* Rotate base of tank to match movement direction */
 	rotateBase: function(){
-		if((this.dir[0] == 1 && this.dir[1] == 1)
-			|| (this.dir[0] == -1 && this.dir[1] == -1)){ //diagonal "left"
+		if((this.dir.up && this.dir.left)
+			|| (this.dir.down && this.dir.right)){ //diagonal "left"
 			this.setDiagonalLeft();
-		}else if((this.dir[0] == 1 && this.dir[1] == -1)
-			|| (this.dir[0] == -1 && this.dir[1] == 1)){ //diagonal "right"
+		}else if((this.dir.up && this.dir.right)
+			|| (this.dir.down && this.dir.left)){ //diagonal "right"
 			this.setDiagonalRight();
-		}else if(this.dir[1] == 1 || this.dir[1] == -1){ //vertical
+		}else if(this.dir.up || this.dir.down){ //vertical
 			this.setVertical();
-		}else if(this.dir[0] == 1 || this.dir[0] == -1){  //horizontal
+		}else if(this.dir.left || this.dir.right){  //horizontal
 			this.setHorizontal();
 		}
 
