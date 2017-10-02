@@ -21,8 +21,8 @@ function Game(arenaId, w, h, socket){
 
 Game.prototype = {
 
-	addTank: function(id, type, isLocal, x, y, hp){
-		var t = new Tank(id, type, this.$arena, this, isLocal, x, y, hp);
+	addTank: function(id, name, type, isLocal, x, y, hp){
+		var t = new Tank(id, name, type, this.$arena, this, isLocal, x, y, hp);
 		if(isLocal){
 			this.localTank = t;
 		}else{
@@ -96,7 +96,7 @@ Game.prototype = {
 			var found = false;
 			game.tanks.forEach( function(clientTank){
 				//update foreign tanks
-				if(clientTank.id == serverTank.id){
+				if(clientTank.id === serverTank.id){
 					clientTank.x = serverTank.x;
 					clientTank.y = serverTank.y;
 					clientTank.baseAngle = serverTank.baseAngle;
@@ -112,7 +112,7 @@ Game.prototype = {
 			if(!found &&
 				(game.localTank == undefined || serverTank.id != game.localTank.id)){
 				//I need to create it
-				game.addTank(serverTank.id, serverTank.type, false, serverTank.x, serverTank.y, serverTank.hp);
+				game.addTank(serverTank.id, serverTank.name, serverTank.type, false, serverTank.x, serverTank.y, serverTank.hp);
 			}
 		});
 
@@ -163,8 +163,9 @@ Ball.prototype = {
 
 }
 
-function Tank(id, type, $arena, game, isLocal, x, y, hp){
+function Tank(id, name, type, $arena, game, isLocal, x, y, hp){
 	this.id = id;
+	this.name= name;
 	this.type = type;
 	this.speed = 5;
 	this.$arena = $arena;
@@ -210,7 +211,7 @@ Tank.prototype = {
 
 		this.$arena.append('<div id="info-' + this.id + '" class="info"></div>');
 		this.$info = $('#info-' + this.id);
-		this.$info.append('<div class="label">' + this.id + '</div>');
+		this.$info.append('<div class="label">' + this.name + '</div>');
 		this.$info.append('<div class="hp-bar"></div>');
 
 		this.refresh();

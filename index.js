@@ -114,6 +114,16 @@ GameServer.prototype = {
 
 }
 
+function guid() {
+    function s4() {
+        return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
+    }
+    return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+        s4() + '-' + s4() + s4() + s4();
+}
+
 var game = new GameServer();
 
 /* Connection events */
@@ -122,13 +132,15 @@ io.on('connection', function(client) {
 	console.log('User connected');
 
 	client.on('joinGame', function(tank){
-		console.log(tank.id + ' joined the game');
+		console.log(tank.name + ' joined the game');
 		var initX = getRandomInt(40, 900);
 		var initY = getRandomInt(40, 500);
-		client.emit('addTank', { id: tank.id, type: tank.type, isLocal: true, x: initX, y: initY, hp: TANK_INIT_HP });
-		client.broadcast.emit('addTank', { id: tank.id, type: tank.type, isLocal: false, x: initX, y: initY, hp: TANK_INIT_HP} );
+		var tankId = guid();
 
-		game.addTank({ id: tank.id, type: tank.type, hp: TANK_INIT_HP});
+		client.emit('addTank', { id: tankId, name: tank.name, type: tank.type, isLocal: true, x: initX, y: initY, hp: TANK_INIT_HP });
+		client.broadcast.emit('addTank', { id: tankId, name: tank.name, type: tank.type, isLocal: false, x: initX, y: initY, hp: TANK_INIT_HP} );
+
+		game.addTank({ id: tankId, name: tank.name, type: tank.type, hp: TANK_INIT_HP});
 	});
 
 	client.on('sync', function(data){
@@ -170,7 +182,7 @@ function Ball(ownerId, alpha, x, y){
 	this.x = x;
 	this.y = y;
 	this.out = false;
-};
+}
 
 Ball.prototype = {
 
@@ -182,7 +194,7 @@ Ball.prototype = {
 		this.y += speedY;
 	}
 
-}
+};
 
 function getRandomInt(min, max) {
 	return Math.floor(Math.random() * (max - min)) + min;

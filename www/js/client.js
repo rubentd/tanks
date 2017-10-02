@@ -7,7 +7,7 @@ var selectedTank = 1;
 var tankName = '';
 
 socket.on('addTank', function(tank){
-	game.addTank(tank.id, tank.type, tank.isLocal, tank.x, tank.y);
+	game.addTank(tank.id, tank.name, tank.type, tank.isLocal, tank.x, tank.y);
 });
 
 socket.on('sync', function(gameServerData){
@@ -52,6 +52,6 @@ $(window).on('beforeunload', function(){
 function joinGame(tankName, tankType, socket){
 	if(tankName != ''){
 		$('#prompt').hide();
-		socket.emit('joinGame', {id: tankName, type: tankType});
+		socket.emit('joinGame', {name: tankName, type: tankType});
 	}
 }
